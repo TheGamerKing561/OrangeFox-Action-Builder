@@ -8,9 +8,7 @@ on:
         required: true
         default: '12.1'
         type: choice
-        options:
-        - 12.1
-        - 11.0
+        options: [12.1, 11.0]
       DEVICE_TREE:
         description: 'OrangeFox Device Tree'
         required: true
@@ -32,14 +30,10 @@ on:
         required: true
         default: 'recovery'
         type: choice
-        options:
-        - boot
-        - recovery
-        - vendorboot
+        options: [boot, recovery, vendorboot]
 
 jobs:
   build:
-    name: Build OFR by ${{ github.actor }}
     runs-on: ubuntu-22.04
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -59,7 +53,7 @@ jobs:
       
     - name: Build Environment
       run: |
-        sudo apt update && sudo apt install aria2 -y
+        sudo apt update && sudo apt install aria2 git -y
         git clone https://gitlab.com/OrangeFox/misc/scripts.git -b master
         cd scripts
         sudo bash setup/android_build_env.sh
@@ -78,46 +72,33 @@ jobs:
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
         git clone ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
-        echo "COMMIT_ID=$(git -C ${{ inputs.DEVICE_PATH }} rev-parse HEAD)" >> $GITHUB_ENV
 
     - name: Fix Ninja Dependency
       run: |
-        # Manually create the output directory and inject the DTB
-        # This prevents the "no known rule to make it" error
+        # Force the prebuilt DTB into the 'out' folder so Ninja finds it immediately
         BASE_PATH="${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}"
         OUT_DIR="$BASE_PATH/out/target/product/${{ inputs.DEVICE_NAME }}"
         DTB_SRC="$BASE_PATH/${{ inputs.DEVICE_PATH }}/prebuilt/dtb.img"
         
-        echo "Creating output directory: $OUT_DIR"
         mkdir -p "$OUT_DIR"
-        
         if [ -f "$DTB_SRC" ]; then
-            echo "Injecting dtb.img into target directory..."
             cp "$DTB_SRC" "$OUT_DIR/dtb.img"
-            # We also touch it to ensure the timestamp is fresh for Ninja
-            touch "$OUT_DIR/dtb.img"
+            echo "Successfully injected dtb.img"
         else
-            echo "::error::Source DTB not found at $DTB_SRC! Check your device tree folders."
-            exit 1
+            echo "Warning: dtb.img not found at $DTB_SRC"
         fi
 
     - name: Building OrangeFox
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
+        # Use set +e to prevent instant crash during setup
+        set +e
         source build/envsetup.sh
+        set -e
         export ALLOW_MISSING_DEPENDENCIES=true
         
-        # Note: 'make clean' is removed here because it would delete the dtb.img we just injected.
-        # We use 'mka' for the target image.
-        lunch twrp_${{ inputs.DEVICE_NAME }}-eng
+        lunch twrp_${{ inputs.DEVICE_NAME }}-eng || { echo "Lunch failed"; exit 1; }
         mka adbd ${{ inputs.BUILD_TARGET }}image
-
-    - name: Set Release Properties
-      run: |
-        echo "BUILD_DATE=$(TZ=Asia/Manila date +%Y%m%d)" >> $GITHUB_ENV
-        DEVICE_TREE_URL="${{ inputs.DEVICE_TREE }}"
-        [[ "${DEVICE_TREE_URL}" == *.git ]] && DEVICE_TREE_URL="${DEVICE_TREE_URL%.git}"
-        echo "DEVICE_TREE_URL=${DEVICE_TREE_URL}" >> $GITHUB_ENV
 
     - name: Upload to Release
       uses: softprops/action-gh-release@v2
@@ -125,9 +106,5 @@ jobs:
         files: |
           OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.img
           OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
-        name: OrangeFox Recovery for ${{ inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
+        name: OrangeFox Recovery for ${{ inputs.DEVICE_NAME }}
         tag_name: ${{ github.run_id }}
-        body: |
-          ## OrangeFox Recovery Build
-          Build Branch: fox_${{ inputs.MANIFEST_BRANCH }}
-          Device Tree: [Link](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
