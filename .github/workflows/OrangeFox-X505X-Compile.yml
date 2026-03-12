@@ -42,7 +42,7 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-               
+                
     - name: Clean-up
       uses: rokibhasansagar/slimhub_actions@main
 
@@ -85,19 +85,30 @@ jobs:
         export ALLOW_MISSING_DEPENDENCIES=true
         lunch twrp_${{ inputs.DEVICE_NAME }}-eng || { echo "Lunch failed"; exit 1; }
         
-        # 1. Clean the build tree (Deletes 'out' folder)
+        # 1. Clean the build tree (Deletes old 'out' folder)
         make clean
         
-        # 2. Re-create the specific out directory and inject DTB AFTER cleaning
-        OUT_DIR="out/target/product/${{ inputs.DEVICE_NAME }}"
+        # 2. Setup Paths for DTB Injection
+        # Standard Path: out/target/product/X505X/
+        STD_OUT_DIR="out/target/product/${{ inputs.DEVICE_NAME }}"
+        # Error Path: out/target/product/X505X/target/product/X505X/
+        ERR_OUT_DIR="out/target/product/${{ inputs.DEVICE_NAME }}/target/product/${{ inputs.DEVICE_NAME }}"
         DTB_SRC="${{ inputs.DEVICE_PATH }}/prebuilt/dtb.img"
         
-        echo "Re-injecting DTB to $OUT_DIR..."
-        mkdir -p "$OUT_DIR"
+        echo "Creating output directories..."
+        mkdir -p "$STD_OUT_DIR"
+        mkdir -p "$ERR_OUT_DIR"
+        
         if [ -f "$DTB_SRC" ]; then
-            cp "$DTB_SRC" "$OUT_DIR/dtb.img"
-            # Ensure Ninja treats it as an existing source
-            touch "$OUT_DIR/dtb.img" 
+            echo "Injecting DTB into multiple locations to satisfy Ninja..."
+            # Copy to both locations to ensure the rule is found
+            cp "$DTB_SRC" "$STD_OUT_DIR/dtb.img"
+            cp "$DTB_SRC" "$ERR_OUT_DIR/dtb.img"
+            
+            # Use touch to update timestamps so the build system recognizes them
+            touch "$STD_OUT_DIR/dtb.img"
+            touch "$ERR_OUT_DIR/dtb.img"
+            echo "DTB Injection successful."
         else
             echo "::error::dtb.img not found at $DTB_SRC"
             exit 1
