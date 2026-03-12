@@ -1,11 +1,5 @@
 name: OrangeFox - Build
 
-# Credits to:
-# https://github.com/TeamWin
-# https://gitlab.com/OrangeFox
-# https://github.com/azwhikaru for Recovery Builder Template
-# And all Contributors in every repositories I used
-
 on:
   workflow_dispatch:
     inputs:
@@ -28,11 +22,11 @@ on:
       DEVICE_PATH:
         description: 'Specify your Device Path'
         required: true
-        default: 'device/realme/nashc'
+        default: 'device/lenovo/X505X'
       DEVICE_NAME:
         description: 'Specify your Device Codename'
         required: true
-        default: 'nashc'
+        default: 'X505X'
       BUILD_TARGET:
         description: 'Specify your Build Target'
         required: true
@@ -54,7 +48,7 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-              
+               
     - name: Clean-up
       uses: rokibhasansagar/slimhub_actions@main
 
@@ -87,6 +81,22 @@ jobs:
         git clone ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
         cd ${{ inputs.DEVICE_PATH }}
         echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+    - name: Pre-place DTB Image
+      run: |
+        # Define paths
+        DTB_SOURCE="${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/${{ inputs.DEVICE_PATH }}/prebuilt/dtb.img"
+        OUT_DIR="${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}"
+        
+        # Check if source exists
+        if [ -f "$DTB_SOURCE" ]; then
+            echo "Found DTB at $DTB_SOURCE. Pre-placing in out directory..."
+            mkdir -p "$OUT_DIR"
+            cp "$DTB_SOURCE" "$OUT_DIR/dtb.img"
+        else
+            echo "::error::DTB file NOT found at $DTB_SOURCE! Build will likely fail."
+            exit 1
+        fi
 
     - name: Building OrangeFox
       run: |
@@ -121,4 +131,3 @@ jobs:
           Build: fox_${{ inputs.MANIFEST_BRANCH }}
           Device: [Device Tree/Branch](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
           Commit: Most recent [commit](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }}) during building.
-          
