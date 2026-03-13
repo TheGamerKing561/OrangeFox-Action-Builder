@@ -12,7 +12,7 @@ on:
       DEVICE_TREE:
         description: 'OrangeFox Device Tree'
         required: true
-        default: 'https://github.com/TheGamerKing561/O-F-recovery_device_lenovo_X505X-12.1'
+        default: 'https://github.com/TheGamerKing561/recovery_device_lenovo_X505X-12.1/'
       DEVICE_TREE_BRANCH:
         description: 'OrangeFox Device Tree Branch'
         required: true
