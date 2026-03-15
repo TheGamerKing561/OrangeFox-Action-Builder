@@ -73,28 +73,28 @@ jobs:
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
         git clone ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
 
-    - name: Patch BoardConfig for Portrait Mode
+        - name: Patch BoardConfig for Portrait Mode
       run: |
-        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
+        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/${{ inputs.DEVICE_PATH }}
 
-        BOARD_FILE=$(grep -rl "TW_THEME" ${{ inputs.DEVICE_PATH }} | grep BoardConfig || true)
+        echo "Searching for BoardConfig files..."
+        FILES=$(find . -type f -name "BoardConfig*.mk")
 
-        if [ -z "$BOARD_FILE" ]; then
-          echo "::error::BoardConfig file not found!"
-          exit 1
-        fi
+        for file in $FILES; do
+          echo "Patching $file"
 
-        echo "Editing $BOARD_FILE"
+          # Replace landscape theme with portrait
+          sed -i 's/TW_THEME[[:space:]]*:?=[[:space:]]*landscape_hdpi/TW_THEME := portrait_hdpi/g' "$file"
 
-        # Replace theme
-        sed -i 's/TW_THEME[[:space:]]*:?=[[:space:]]*landscape_hdpi/TW_THEME := portrait_hdpi/g' "$BOARD_FILE"
+          # Comment variables if they exist
+          sed -i '/TW_ROTATION/s/^/#/' "$file"
+          sed -i '/RECOVERY_TOUCHSCREEN_SWAP_XY/s/^/#/' "$file"
+          sed -i '/RECOVERY_TOUCHSCREEN_FLIP_Y/s/^/#/' "$file"
 
-        # Comment rotation related variables if present
-        sed -i 's/^\(.*TW_ROTATION.*\)$/#\1/g' "$BOARD_FILE"
-        sed -i 's/^\(.*RECOVERY_TOUCHSCREEN_SWAP_XY.*\)$/#\1/g' "$BOARD_FILE"
-        sed -i 's/^\(.*RECOVERY_TOUCHSCREEN_FLIP_Y.*\)$/#\1/g' "$BOARD_FILE"
+        done
 
-        echo "BoardConfig patched successfully."
+        echo "Final check:"
+        grep -R "TW_THEME\|TW_ROTATION\|RECOVERY_TOUCHSCREEN" .
 
     - name: Building OrangeFox
       run: |
