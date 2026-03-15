@@ -16,7 +16,7 @@ on:
       DEVICE_TREE_BRANCH:
         description: 'OrangeFox Device Tree Branch'
         required: true
-        default: 'android-12.1'
+        default: 'android-12.1-ofox'
       DEVICE_PATH:
         description: 'Specify your Device Path'
         required: true
@@ -57,7 +57,7 @@ jobs:
         git clone https://gitlab.com/OrangeFox/misc/scripts.git -b master
         cd scripts
         sudo bash setup/android_build_env.sh
-      
+
     - name: Set-up Manifest
       run: |
         mkdir -p ${GITHUB_WORKSPACE}/OrangeFox
@@ -73,37 +73,14 @@ jobs:
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
         git clone ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
 
-    - name: Apply Portrait Override
+    - name: Set Build Date
       run: |
-        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/${{ inputs.DEVICE_PATH }}
-
-        echo "Creating BoardConfig override..."
-
-        cat <<EOF > BoardConfig_override.mk
-        # Force portrait theme
-        TW_THEME := portrait_hdpi
-
-        # Disable rotation and touchscreen transforms
-        #TW_ROTATION := 90
-        #RECOVERY_TOUCHSCREEN_SWAP_XY := true
-        #RECOVERY_TOUCHSCREEN_FLIP_Y := true
-        EOF
-
-        echo "Including override in BoardConfig.mk..."
-
-        if ! grep -q "BoardConfig_override.mk" BoardConfig.mk; then
-          echo "" >> BoardConfig.mk
-          echo "# Include automatic override from GitHub Actions" >> BoardConfig.mk
-          echo "-include \$(LOCAL_PATH)/BoardConfig_override.mk" >> BoardConfig.mk
-        fi
-
-        echo "Override applied successfully."
+        echo "BUILD_DATE=$(date +'%d%m%Y-%H%M')" >> $GITHUB_ENV
 
     - name: Building OrangeFox
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
         
-        # Prevent strict bash exit for setup script
         set +e
         source build/envsetup.sh
         set -e
@@ -111,13 +88,9 @@ jobs:
         export ALLOW_MISSING_DEPENDENCIES=true
         lunch twrp_${{ inputs.DEVICE_NAME }}-eng || { echo "Lunch failed"; exit 1; }
         
-        # 1. Clean the build tree (Deletes old 'out' folder)
         make clean
         
-        # 2. Setup Paths for DTB Injection
-        # Standard Path: out/target/product/X505X/
         STD_OUT_DIR="out/target/product/${{ inputs.DEVICE_NAME }}"
-        # Error Path: out/target/product/X505X/target/product/X505X/
         ERR_OUT_DIR="out/target/product/${{ inputs.DEVICE_NAME }}/target/product/${{ inputs.DEVICE_NAME }}"
         DTB_SRC="${{ inputs.DEVICE_PATH }}/prebuilt/dtb.img"
         
@@ -127,11 +100,8 @@ jobs:
         
         if [ -f "$DTB_SRC" ]; then
             echo "Injecting DTB into multiple locations to satisfy Ninja..."
-            # Copy to both locations to ensure the rule is found
             cp "$DTB_SRC" "$STD_OUT_DIR/dtb.img"
             cp "$DTB_SRC" "$ERR_OUT_DIR/dtb.img"
-            
-            # Use touch to update timestamps so the build system recognizes them
             touch "$STD_OUT_DIR/dtb.img"
             touch "$ERR_OUT_DIR/dtb.img"
             echo "DTB Injection successful."
@@ -140,9 +110,28 @@ jobs:
             exit 1
         fi
         
-        # 3. Start the actual compilation
         mka adbd ${{ inputs.BUILD_TARGET }}image
 
+    - name: Rename Build Outputs
+      run: |
+        cd OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}
+        
+        for f in OrangeFox*.img; do
+          [ -e "$f" ] && mv "$f" "${f%.img}-${BUILD_DATE}.img"
+        done
+        
+        for f in OrangeFox*.zip; do
+          [ -e "$f" ] && mv "$f" "${f%.zip}-${BUILD_DATE}.zip"
+        done
+
+    - name: Upload to Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.img
+          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
+        name: OrangeFox Recovery for ${{ inputs.DEVICE_NAME }} (${{ env.BUILD_DATE }})
+        tag_name: build-${{ env.BUILD_DATE }}
     - name: Upload to Release
       uses: softprops/action-gh-release@v2
       with:
