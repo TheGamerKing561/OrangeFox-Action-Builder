@@ -73,28 +73,31 @@ jobs:
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
         git clone ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
 
-    - name: Patch BoardConfig for Portrait Mode
+    - name: Apply Portrait Override
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/${{ inputs.DEVICE_PATH }}
 
-        echo "Searching for BoardConfig files..."
-        FILES=$(find . -type f -name "BoardConfig*.mk")
+        echo "Creating BoardConfig override..."
 
-        for file in $FILES; do
-          echo "Patching $file"
+        cat <<EOF > BoardConfig_override.mk
+        # Force portrait theme
+        TW_THEME := portrait_hdpi
 
-          # Replace landscape theme with portrait
-          sed -i 's/TW_THEME[[:space:]]*:?=[[:space:]]*landscape_hdpi/TW_THEME := portrait_hdpi/g' "$file"
+        # Disable rotation and touchscreen transforms
+        #TW_ROTATION := 90
+        #RECOVERY_TOUCHSCREEN_SWAP_XY := true
+        #RECOVERY_TOUCHSCREEN_FLIP_Y := true
+        EOF
 
-          # Comment variables if they exist
-          sed -i '/TW_ROTATION/s/^/#/' "$file"
-          sed -i '/RECOVERY_TOUCHSCREEN_SWAP_XY/s/^/#/' "$file"
-          sed -i '/RECOVERY_TOUCHSCREEN_FLIP_Y/s/^/#/' "$file"
+        echo "Including override in BoardConfig.mk..."
 
-        done
+        if ! grep -q "BoardConfig_override.mk" BoardConfig.mk; then
+          echo "" >> BoardConfig.mk
+          echo "# Include automatic override from GitHub Actions" >> BoardConfig.mk
+          echo "-include \$(LOCAL_PATH)/BoardConfig_override.mk" >> BoardConfig.mk
+        fi
 
-        echo "Final check:"
-        grep -R "TW_THEME\|TW_ROTATION\|RECOVERY_TOUCHSCREEN" .
+        echo "Override applied successfully."
 
     - name: Building OrangeFox
       run: |
