@@ -72,6 +72,15 @@ jobs:
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
         git clone ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
+        cd "./${{ inputs.DEVICE_PATH }}"
+        
+        COMMIT_ID=$(git rev-parse HEAD)
+        SHORT_COMMIT_ID=$(git rev-parse --short HEAD)
+        COMMIT_TITLE=$(git log -1 --pretty=%s)
+        
+        echo "COMMIT_ID=$COMMIT_ID" >> $GITHUB_ENV
+        echo "SHORT_COMMIT_ID=$SHORT_COMMIT_ID" >> $GITHUB_ENV
+        echo "COMMIT_TITLE=$COMMIT_TITLE" >> $GITHUB_ENV
 
     - name: Set Build Date
       run: |
@@ -130,13 +139,12 @@ jobs:
         files: |
           OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.img
           OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
-        name: OrangeFox Recovery for ${{ inputs.DEVICE_NAME }} (${{ env.BUILD_DATE }})
+        name: OrangeFox Recovery for ${{ inputs.DEVICE_NAME }} (${{ env.BUILD_DATE }}) (${{ env.SHORT_COMMIT_ID }})
         tag_name: build-${{ env.BUILD_DATE }}
-    - name: Upload to Release
-      uses: softprops/action-gh-release@v2
-      with:
-        files: |
-          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.img
-          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
-        name: OrangeFox Recovery for ${{ inputs.DEVICE_NAME }}
-        tag_name: ${{ github.run_id }}
+        body: |
+          Build: ${{ inputs.MANIFEST_BRANCH }}
+          Device: [Device Tree](${{ inputs.DEVICE_TREE }})
+          Branch: ${{ inputs.DEVICE_TREE_BRANCH }}
+          Commit: [${{ env.COMMIT_ID }}](${{ inputs.DEVICE_TREE }}/commit/${{ env.COMMIT_ID }}) [${{ env.COMMIT_TITLE }}]
+          Image Build Target: ${{ inputs.BUILD_TARGET }}
+        prerelease: true
