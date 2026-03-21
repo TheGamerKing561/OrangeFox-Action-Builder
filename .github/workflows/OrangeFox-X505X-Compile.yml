@@ -89,8 +89,7 @@ jobs:
     - name: Apply source patches
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
-        cd "./${{ inputs.DEVICE_PATH }}"
-        git apply patches/*.patch
+        git apply ${{ inputs.DEVICE_PATH }}/patches/*.patch
 
     - name: Building OrangeFox
       run: |
