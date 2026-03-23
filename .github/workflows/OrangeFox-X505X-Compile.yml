@@ -88,8 +88,25 @@ jobs:
 
     - name: Apply source patches
       run: |
-        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
-        git apply ${{ inputs.DEVICE_PATH }}/patches/*.patch
+        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery
+
+        PATCH_DIR="../../${{ inputs.DEVICE_PATH }}/patches"
+
+        if [ -d "$PATCH_DIR" ]; then
+          echo "Applying patches from $PATCH_DIR"
+
+          for patch in $PATCH_DIR/*.patch; do
+            [ -f "$patch" ] || continue
+            echo "Applying $patch"
+
+            git apply "$patch" || {
+              echo "git apply failed, trying fallback..."
+              git apply --reject --whitespace=fix "$patch" || exit 1
+            }
+          done
+        else
+          echo "No patches directory found"
+        fi
 
     - name: Building OrangeFox
       run: |
