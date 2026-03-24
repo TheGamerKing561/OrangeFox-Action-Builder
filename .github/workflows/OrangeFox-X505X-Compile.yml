@@ -108,6 +108,12 @@ jobs:
           echo "No patches directory found"
         fi
 
+    - name: Set Maintainer Info
+      run: |
+        if [ "${{ github.actor }}" = "TheGamerKing561" ]; then
+          echo "OF_MAINTAINER=@TheGamerKing on XDA" >> $GITHUB_ENV
+        fi
+        
     - name: Building OrangeFox
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
@@ -140,6 +146,10 @@ jobs:
             echo "::error::dtb.img not found at $DTB_SRC"
             exit 1
         fi
+
+        if [ -n "$OF_MAINTAINER" ]; then
+          export OF_MAINTAINER
+        fi
         
         mka adbd ${{ inputs.BUILD_TARGET }}image
 
@@ -169,4 +179,5 @@ jobs:
           Branch: ${{ inputs.DEVICE_TREE_BRANCH }}
           Commit: [${{ env.COMMIT_ID }}](${{ inputs.DEVICE_TREE }}/commit/${{ env.COMMIT_ID }}) [${{ env.COMMIT_TITLE }}]
           Image Build Target: ${{ inputs.BUILD_TARGET }}
+          ${{ env.OF_MAINTAINER && format('Maintainer: {0}', env.OF_MAINTAINER) }}
         prerelease: true
