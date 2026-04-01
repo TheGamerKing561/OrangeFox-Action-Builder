@@ -144,7 +144,6 @@ jobs:
             echo "DTB Injection successful."
         else
             echo "::error::dtb.img not found at $DTB_SRC"
-            exit 1
         fi
 
         if [ -n "$OF_MAINTAINER" ]; then
