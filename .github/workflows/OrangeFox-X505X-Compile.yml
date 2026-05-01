@@ -1,4 +1,4 @@
-name: OrangeFox - Build X505X
+name: OrangeFox - Build (new)
 
 on:
   workflow_dispatch:
@@ -127,30 +127,15 @@ jobs:
         
         make clean
         
-        STD_OUT_DIR="out/target/product/${{ inputs.DEVICE_NAME }}"
-        ERR_OUT_DIR="out/target/product/${{ inputs.DEVICE_NAME }}/target/product/${{ inputs.DEVICE_NAME }}"
-        DTB_SRC="${{ inputs.DEVICE_PATH }}/prebuilt/dtb.img"
-        
-        echo "Creating output directories..."
-        mkdir -p "$STD_OUT_DIR"
-        mkdir -p "$ERR_OUT_DIR"
-        
-        if [ -f "$DTB_SRC" ]; then
-            echo "Injecting DTB into multiple locations to satisfy Ninja..."
-            cp "$DTB_SRC" "$STD_OUT_DIR/dtb.img"
-            cp "$DTB_SRC" "$ERR_OUT_DIR/dtb.img"
-            touch "$STD_OUT_DIR/dtb.img"
-            touch "$ERR_OUT_DIR/dtb.img"
-            echo "DTB Injection successful."
-        else
-            echo "::error::dtb.img not found at $DTB_SRC"
-        fi
-
         if [ -n "$OF_MAINTAINER" ]; then
           export OF_MAINTAINER
         fi
         
         mka adbd ${{ inputs.BUILD_TARGET }}image
+
+        if [ "${{ github.actor }}" = "TheGamerKing561" ]; then
+          echo "OF_MAINTAINER=TheGamerKing on XDA" >> $GITHUB_ENV
+        fi
 
     - name: Rename Build Outputs
       run: |
