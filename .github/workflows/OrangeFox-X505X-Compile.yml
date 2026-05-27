@@ -183,6 +183,6 @@ jobs:
           [${{ env.OF_SHORT_COMMIT }}](https://gitlab.com/OrangeFox/bootable/Recovery/-/commit/${{ env.OF_COMMIT_ID }}) - ${{ env.OF_COMMIT_TITLE }}
 
           Device Tree Commit:
-          [${{ env.COMMIT_ID }}](${{ inputs.DEVICE_TREE }}/commit/${{ env.COMMIT_ID }}) - ${{ env.COMMIT_TITLE }}
+          [${{ env.SHORT_COMMIT_ID }}](${{ inputs.DEVICE_TREE }}/commit/${{ env.COMMIT_ID }}) - ${{ env.COMMIT_TITLE }}
           
         prerelease: true
