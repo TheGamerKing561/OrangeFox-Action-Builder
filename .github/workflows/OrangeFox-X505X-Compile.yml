@@ -21,10 +21,10 @@ on:
         description: 'Specify your Device Path'
         required: true
         default: 'device/lenovo/X505X'
-      DEVICE_NAME:
-        description: 'Specify your Device Codename'
+      MAKEFILE_NAME:
+        description: 'Makefile Name (excluding .mk extension, Example: twrp_codename)'
         required: true
-        default: 'X505X'
+        default: 'twrp_X505X'
       BUILD_TARGET:
         description: 'Specify your Build Target'
         required: true
@@ -139,7 +139,7 @@ jobs:
         set -e
         
         export ALLOW_MISSING_DEPENDENCIES=true
-        lunch twrp_${{ inputs.DEVICE_NAME }}-eng || { echo "Lunch failed"; exit 1; }
+        lunch ${{ inputs.MAKEFILE_NAME }}-eng || { echo "Lunch failed"; exit 1; }
         
         make clean
         
