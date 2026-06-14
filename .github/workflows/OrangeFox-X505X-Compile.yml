@@ -172,7 +172,7 @@ jobs:
           OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.img
           OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
         name: OrangeFox Recovery for ${{ inputs.DEVICE_NAME }} (${{ env.BUILD_DATE }}) (${{ env.SHORT_COMMIT_ID }})
-        tag_name: build-${{ env.BUILD_DATE }}
+        tag_name: ${{ inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}
         body: |
           OrangeFox Branch: ${{ inputs.MANIFEST_BRANCH }}
 
