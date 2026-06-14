@@ -77,10 +77,12 @@ jobs:
         COMMIT_ID=$(git rev-parse HEAD)
         SHORT_COMMIT_ID=$(git rev-parse --short HEAD)
         COMMIT_TITLE=$(git log -1 --pretty=%s)
+        COMMIT_DATE=$(git log -1 --date=format:%Y-%m-%d --pretty=%cd)
         
         echo "COMMIT_ID=$COMMIT_ID" >> $GITHUB_ENV
         echo "SHORT_COMMIT_ID=$SHORT_COMMIT_ID" >> $GITHUB_ENV
         echo "COMMIT_TITLE=$COMMIT_TITLE" >> $GITHUB_ENV
+        echo "COMMIT_DATE=$COMMIT_DATE" >> $GITHUB_ENV
 
     - name: Get OrangeFox Recovery Commit
       run: |
@@ -89,10 +91,12 @@ jobs:
         OF_COMMIT_ID=$(git rev-parse HEAD)
         OF_SHORT_COMMIT=$(git rev-parse --short HEAD)
         OF_COMMIT_TITLE=$(git log -1 --pretty=%s)
+        OF_COMMIT_DATE=$(git log -1 --date=format:%Y-%m-%d --pretty=%cd)
 
         echo "OF_COMMIT_ID=$OF_COMMIT_ID" >> $GITHUB_ENV
         echo "OF_SHORT_COMMIT=$OF_SHORT_COMMIT" >> $GITHUB_ENV
         echo "OF_COMMIT_TITLE=$OF_COMMIT_TITLE" >> $GITHUB_ENV
+        echo "OF_COMMIT_DATE=$OF_COMMIT_DATE" >> $GITHUB_ENV
 
     - name: Set Build Date
       run: |
@@ -180,9 +184,9 @@ jobs:
           Device Tree Branch: ${{ inputs.DEVICE_TREE_BRANCH }}
           
           OrangeFox Recovery Commit:
-          [${{ env.OF_SHORT_COMMIT }}](https://gitlab.com/OrangeFox/bootable/Recovery/-/commit/${{ env.OF_COMMIT_ID }}) - ${{ env.OF_COMMIT_TITLE }}
+          [${{ env.OF_SHORT_COMMIT }}](https://gitlab.com/OrangeFox/bootable/Recovery/-/commit/${{ env.OF_COMMIT_ID }}) - ${{ env.OF_COMMIT_TITLE }} (${{ env.OF_COMMIT_DATE }})
 
           Device Tree Commit:
-          [${{ env.SHORT_COMMIT_ID }}](${{ inputs.DEVICE_TREE }}/commit/${{ env.COMMIT_ID }}) - ${{ env.COMMIT_TITLE }}
+          [${{ env.SHORT_COMMIT_ID }}](${{ inputs.DEVICE_TREE }}/commit/${{ env.COMMIT_ID }}) - ${{ env.COMMIT_TITLE }} (${{ env.COMMIT_DATE }})
           
         prerelease: true
