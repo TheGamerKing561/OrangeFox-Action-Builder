@@ -21,6 +21,10 @@ on:
         description: 'Specify your Device Path'
         required: true
         default: 'device/lenovo/X505X'
+      DEVICE_NAME:
+        description: 'Specify your Device Codename'
+        required: true
+        default: 'X505X'
       MAKEFILE_NAME:
         description: 'Makefile Name (excluding .mk extension, Example: twrp_codename)'
         required: true
