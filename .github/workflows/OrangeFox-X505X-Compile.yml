@@ -8,7 +8,7 @@ on:
         required: true
         default: '12.1'
         type: choice
-        options: [12.1, 11.0]
+        options: [14.1, 12.1, 11.0]
       DEVICE_TREE:
         description: 'OrangeFox Device Tree'
         required: true
@@ -143,7 +143,14 @@ jobs:
         set -e
         
         export ALLOW_MISSING_DEPENDENCIES=true
-        lunch ${{ inputs.MAKEFILE_NAME }}-eng || { echo "Lunch failed"; exit 1; }
+        
+        if [ "${{ inputs.MANIFEST_BRANCH }}" = "14.1" ]; then
+          LUNCH_TARGET="${{ inputs.MAKEFILE_NAME }}-ap2a-eng"
+        else
+          LUNCH_TARGET="${{ inputs.MAKEFILE_NAME }}-eng"
+        fi
+
+        lunch "$LUNCH_TARGET" || { echo "Lunch failed"; exit 1; }
         
         make clean
         
