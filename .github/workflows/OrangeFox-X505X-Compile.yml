@@ -35,6 +35,15 @@ on:
         default: 'recovery'
         type: choice
         options: [boot, recovery, vendorboot]
+      APPLY_PATCHES:
+        description: 'Apply custom patches'
+        type: boolean
+        required: true
+        default: false
+      PATCHES_FOLDER:
+        description: 'Name of folder containing custom patches (inside the device tree)'
+        required: true
+        default: 'patches'
 
 jobs:
   build:
@@ -109,24 +118,29 @@ jobs:
     - name: Apply source patches
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery
+        PATCH_DIR="../../${{ inputs.DEVICE_PATH }}/${{ inputs.PATCHES_FOLDER }}"
+        HAS_PATCHES="false"
 
-        PATCH_DIR="../../${{ inputs.DEVICE_PATH }}/patches"
-
-        if [ -d "$PATCH_DIR" ]; then
-          echo "Applying patches from $PATCH_DIR"
-
-          for patch in $PATCH_DIR/*.patch; do
-            [ -f "$patch" ] || continue
-            echo "Applying $patch"
-
-            git apply "$patch" || {
-              echo "git apply failed, trying fallback..."
-              git apply --reject --whitespace=fix "$patch" || exit 1
-            }
-          done
+        if [ "${{ inputs.APPLY_PATCHES }}" = "true" ]; then
+          if [ -d "$PATCH_DIR" ]; then
+            echo "Applying patches from $PATCH_DIR"
+            for patch in $PATCH_DIR/*.patch; do
+              [ -f "$patch" ] || continue
+              echo "Applying $patch"
+              git apply "$patch" || {
+                echo "git apply failed, trying fallback..."
+                git apply --reject --whitespace=fix "$patch" || exit 1
+              }
+              HAS_PATCHES="true"
+            done
+          else
+            echo "Specified patches directory not found: $PATCH_DIR"
+          fi
         else
-          echo "No patches directory found"
+          echo "Patches disabled by user preference."
         fi
+
+        echo "HAS_PATCHES=$HAS_PATCHES" >> $GITHUB_ENV
 
     - name: Set Maintainer Info
       run: |
@@ -166,14 +180,14 @@ jobs:
 
     - name: Rename Build Outputs
       run: |
-        cd OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}
+        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}
         
         for f in OrangeFox*.img; do
-          [ -e "$f" ] && mv "$f" "${f%.img}-${BUILD_DATE}.img"
+          [ -e "$f" ] && mv "$f" "${f%.img}-${{ env.BUILD_DATE }}.img"
         done
         
         for f in OrangeFox*.zip; do
-          [ -e "$f" ] && mv "$f" "${f%.zip}-${BUILD_DATE}.zip"
+          [ -e "$f" ] && mv "$f" "${f%.zip}-${{ env.BUILD_DATE }}.zip"
         done
 
     - name: Upload to Release
@@ -196,6 +210,7 @@ jobs:
           
           OrangeFox Recovery Commit:
           [${{ env.OF_SHORT_COMMIT }}](https://gitlab.com/OrangeFox/bootable/Recovery/-/commit/${{ env.OF_COMMIT_ID }}) - ${{ env.OF_COMMIT_TITLE }} (${{ env.OF_COMMIT_DATE }})
+          ${{ env.HAS_PATCHES == 'true' && format('**Note: Custom patches were applied to the recovery source. Please check the "{0}" folder in the device tree used for the build, from which the patches were applied.**', inputs.PATCHES_FOLDER) || '' }}
 
           Device Tree Commit:
           [${{ env.SHORT_COMMIT_ID }}](${{ inputs.DEVICE_TREE }}/commit/${{ env.COMMIT_ID }}) - ${{ env.COMMIT_TITLE }} (${{ env.COMMIT_DATE }})
