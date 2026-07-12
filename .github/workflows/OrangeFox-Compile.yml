@@ -39,7 +39,6 @@ on:
         description: 'Maintainer name'
         required: false
         default: ''
-        options: [boot, recovery, vendorboot]
       APPLY_PATCHES:
         description: 'Apply custom source patches'
         type: boolean
@@ -149,7 +148,7 @@ jobs:
 
     - name: Set Maintainer Info
       run: |
-        if [ "${{ github.actor }}" = "TheGamerKing561" ]; then
+        if [ "${{ github.actor }}" = "TheGamerKing561" && "${{ inputs.MAINTAINER_NAME }}" != "" ]; then
           echo "OF_MAINTAINER=@TheGamerKing on XDA" >> $GITHUB_ENV
         else if ["${{ inputs.MAINTAINER_NAME }}" != ""]
           echo "OF_MAINTAINER=${{ inputs.MAINTAINER_NAME }}" >> $GITHUB_ENV
