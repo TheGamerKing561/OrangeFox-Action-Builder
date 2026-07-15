@@ -145,9 +145,9 @@ jobs:
 
     - name: Set Maintainer Info
       run: |
-        if [ "${{ github.actor }}" = "TheGamerKing561" && "${{ inputs.MAINTAINER_NAME }}" != "" ]; then
+        if [ "${{ github.actor }}" = "TheGamerKing561" ] && [ "${{ inputs.MAINTAINER_NAME }}" == "" ]; then
           echo "OF_MAINTAINER=@TheGamerKing on XDA" >> $GITHUB_ENV
-        else if ["${{ inputs.MAINTAINER_NAME }}" != ""] then
+        elif ["${{ inputs.MAINTAINER_NAME }}" != ""] then
           echo "OF_MAINTAINER=${{ inputs.MAINTAINER_NAME }}" >> $GITHUB_ENV
         fi
         
