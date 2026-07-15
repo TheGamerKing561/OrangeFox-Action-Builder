@@ -120,28 +120,25 @@ jobs:
         echo "BUILD_DATE=$(date +'%Y%m%d-%H%M')" >> $GITHUB_ENV
 
     - name: Apply source patches
+      if: github.event.inputs.APPLY_PATCHES == 'true'
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery
         PATCH_DIR="../../${{ inputs.DEVICE_PATH }}/${{ inputs.PATCHES_FOLDER }}"
         HAS_PATCHES="false"
 
-        if [ "${{ inputs.APPLY_PATCHES }}" = "true" ]; then
-          if [ -d "$PATCH_DIR" ]; then
-            echo "Applying patches from $PATCH_DIR"
-            for patch in $PATCH_DIR/*.patch; do
-              [ -f "$patch" ] || continue
-              echo "Applying $patch"
-              git apply "$patch" || {
-                echo "git apply failed, trying fallback..."
-                git apply --reject --whitespace=fix "$patch" || exit 1
-              }
-              HAS_PATCHES="true"
-            done
-          else
-            echo "Specified patches directory not found: $PATCH_DIR"
-          fi
+        if [ -d "$PATCH_DIR" ]; then
+          echo "Applying patches from $PATCH_DIR"
+          for patch in $PATCH_DIR/*.patch; do
+            [ -f "$patch" ] || continue
+            echo "Applying $patch"
+            git apply "$patch" || {
+              echo "git apply failed, trying fallback..."
+              git apply --reject --whitespace=fix "$patch" || exit 1
+            }
+            HAS_PATCHES="true"
+          done
         else
-          echo "Patches disabled by user preference."
+          echo "Specified patches directory not found: $PATCH_DIR"
         fi
 
         echo "HAS_PATCHES=$HAS_PATCHES" >> $GITHUB_ENV
@@ -150,7 +147,7 @@ jobs:
       run: |
         if [ "${{ github.actor }}" = "TheGamerKing561" && "${{ inputs.MAINTAINER_NAME }}" != "" ]; then
           echo "OF_MAINTAINER=@TheGamerKing on XDA" >> $GITHUB_ENV
-        else if ["${{ inputs.MAINTAINER_NAME }}" != ""]
+        else if ["${{ inputs.MAINTAINER_NAME }}" != ""] then
           echo "OF_MAINTAINER=${{ inputs.MAINTAINER_NAME }}" >> $GITHUB_ENV
         fi
         
