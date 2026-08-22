@@ -39,6 +39,11 @@ on:
         description: 'Maintainer name'
         required: false
         default: ''
+      set_custom_build_identity:
+        description: Set custom BUILD_USERNAME and BUILD_HOSTNAME
+        required: false
+        default: false
+        type: boolean
       APPLY_PATCHES:
         description: 'Apply custom source patches'
         type: boolean
@@ -160,6 +165,12 @@ jobs:
         set -e
         
         export ALLOW_MISSING_DEPENDENCIES=true
+
+        if [[ "${{ github.actor }}" == "TheGamerKing561" && "${{ inputs.set_custom_build_identity }}" == "true" ]]; then
+          export BUILD_USERNAME="thegamerking"
+          export BUILD_HOSTNAME="github-runner"
+          echo "Using custom build identity."
+        fi
         
         if [ "${{ inputs.MANIFEST_BRANCH }}" = "14.1" ]; then
           LUNCH_TARGET="${{ inputs.MAKEFILE_NAME }}-ap2a-eng"
