@@ -44,6 +44,16 @@ on:
         required: false
         default: false
         type: boolean
+      custom_env:
+        description: Custom environment variables to export before build (e.g., VAR1=value1 VAR2=value2)
+        required: false
+        default: ""
+        type: string
+      custom_commands:
+        description: Custom bash commands to run before build (chain with && or ;)
+        required: false
+        default: ""
+        type: string
       APPLY_PATCHES:
         description: 'Apply custom source patches'
         type: boolean
@@ -157,6 +167,9 @@ jobs:
         fi
         
     - name: Building OrangeFox
+      env:
+        CUSTOM_ENV: ${{ inputs.custom_env }}
+        CUSTOM_COMMANDS: ${{ inputs.custom_commands }}
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
         
@@ -184,6 +197,17 @@ jobs:
         
         if [ -n "$OF_MAINTAINER" ]; then
           export OF_MAINTAINER
+        fi
+
+        if [ -n "$CUSTOM_ENV" ]; then
+          echo "Applying custom environment variables: $CUSTOM_ENV"
+          export $CUSTOM_ENV
+        fi
+
+        if [ -n "$CUSTOM_COMMANDS" ]; then
+          echo "=== RUNNING CUSTOM COMMANDS ==="
+          eval "$CUSTOM_COMMANDS"
+          echo "==============================="
         fi
         
         mka adbd ${{ inputs.BUILD_TARGET }}image
