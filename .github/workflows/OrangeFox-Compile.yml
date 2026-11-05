@@ -184,17 +184,7 @@ jobs:
           export BUILD_HOSTNAME="github-runner"
           echo "Using custom build identity."
         fi
-        
-        if [ "${{ inputs.MANIFEST_BRANCH }}" = "14.1" ]; then
-          LUNCH_TARGET="${{ inputs.MAKEFILE_NAME }}-ap2a-eng"
-        else
-          LUNCH_TARGET="${{ inputs.MAKEFILE_NAME }}-eng"
-        fi
 
-        lunch "$LUNCH_TARGET" || { echo "Lunch failed"; exit 1; }
-        
-        make clean
-        
         if [ -n "$OF_MAINTAINER" ]; then
           export OF_MAINTAINER
         fi
@@ -209,6 +199,16 @@ jobs:
           eval "$CUSTOM_COMMANDS"
           echo "==============================="
         fi
+        
+        if [ "${{ inputs.MANIFEST_BRANCH }}" = "14.1" ]; then
+          LUNCH_TARGET="${{ inputs.MAKEFILE_NAME }}-ap2a-eng"
+        else
+          LUNCH_TARGET="${{ inputs.MAKEFILE_NAME }}-eng"
+        fi
+
+        lunch "$LUNCH_TARGET" || { echo "Lunch failed"; exit 1; }
+        
+        make clean
         
         mka adbd ${{ inputs.BUILD_TARGET }}image
 
